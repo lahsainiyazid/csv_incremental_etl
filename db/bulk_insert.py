@@ -27,6 +27,17 @@ def insert_rows(url=db_url):
                 values (%s,%s,%s,%s,%s);
                             """,(row[0],row[1],row[2],row[3],row[4]))
 
-
+def indomptancy(url=db_url):
+    rows=get_csv_rows()
+    with psycopg.connect(url) as conn:
+        with conn.cursor() as cur:
+            for row in rows:
+                conn.execute("""
+            INSERT INTO transactions 
+            (transaction_id,transaction_date,account_id,transaction_type,amount)
+            values (%s,%s,%s,%s,%s)
+             on conflict (transaction_id) do nothing;
+                             """,(row[0],row[1],row[2],row[3],row[4]))
+            
 if __name__=="__main__":
-    insert_rows()
+    indomptancy()
