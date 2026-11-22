@@ -30,14 +30,14 @@ def validate():
     watermark=get_watermark_main()
     cleaned_rows=[]
     for row in rows:
-        if (datetime.fromisoformat(row[1])<watermark):
+        if (datetime.fromisoformat(row[1])<=watermark):
             continue 
         transaction_id=row[0]
         transaction_timestamp=datetime.fromisoformat(row[1])
-        account_id=row[2],
+        account_id=row[2]
         transaction_type=row[3]
         amount=Decimal(row[4])
-        cleaned_rows.append([transaction_id,transaction_timestamp,account_id,amount])
+        cleaned_rows.append([transaction_id,transaction_timestamp,account_id,transaction_type,amount])
     return cleaned_rows
 
 def insert_clean_valid_rows(url=db_url):
@@ -47,13 +47,26 @@ def insert_clean_valid_rows(url=db_url):
             cur.executemany("""
             INSERT INTO transactions (transaction_id,transaction_date,
             account_id,transaction_type,amount)
-            values (%s,%s,%s,%s,%s);
-                            """,clean)
+            values (%s,%s,%s,%s,%s)
+             ON conflict (transaction_id) do nothing ; """,clean)
+            cur.execute("""
+             SELECT transaction_id,transaction_date from transactions 
+             order by transaction_date desc 
+             LIMIT 1;
+            """)
+            result=cur.fetchone()
+            cur.execute("""
+            INSERT INTO watermarks (pipeline,last_id,last_timestamp)
+            values ('main_pipeline',%s,%s) 
+            on conflict(pipeline) do 
+            update   set last_id=excluded.last_id,
+            last_timestamp=excluded.last_timestamp;""",(result[0],result[1]))
+
 
 
 
 if __name__=="__main__":
-    insert_clean_valid_rows()
-    print("Successfully inserted clean rows!")
-
+    result=insert_clean_valid_rows()
+    print(result)
+   
 
