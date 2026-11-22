@@ -2,17 +2,14 @@ import psycopg
 from db_url import db_url 
 
 
-def get_watermark(url=db_url):
+
+def create_table(url=db_url):
     with psycopg.connect(url) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-            SELECT max(transaction_date) from transactions; 
-                        """)
-            result=cur.fetchone()
-            return result 
+            cur.execute("""CREATE  TABLE IF NOT EXISTS watermarks 
+            (pipeline TEXT PRIMARY KEY,
+             completed_at TIMESTAMP NOT NULL );""")
 
-    
 
 if __name__=="__main__":
-    water=get_watermark()
-    print(water)
+    create_table()
